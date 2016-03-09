@@ -1,0 +1,391 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25">
+<Class name="Studio.SourceControl.Command.GITClient">
+<Description><![CDATA[
+
+Wrapper to call GIT commands from Caché</br>
+Commands will be run as the Caché O.S. user</br>]]></Description>
+<Super>%RegisteredObject</Super>
+<TimeCreated>62896,40708.534159</TimeCreated>
+
+<Parameter name="CACHEDIRNAME">
+<Description>
+Name of the subdir that will hold Caché files in Git workdir</Description>
+<Default>cache/</Default>
+</Parameter>
+
+<Property name="Logger">
+<Description>
+Logger instance to display messages</Description>
+<Type>Studio.SourceControl.Util.Logger</Type>
+</Property>
+
+<Property name="GitPath">
+<Description>
+Path to GIT binaries (with trailing slash)</Description>
+<Type>%String</Type>
+</Property>
+
+<Property name="WorkDir">
+<Description>
+Path to GIT work dir (with trailing slash)</Description>
+<Type>%String</Type>
+</Property>
+
+<Property name="CacheDir">
+<Description>
+Path to Cache files in GIT work dir (with trailing slash)</Description>
+<Type>%String</Type>
+</Property>
+
+<Property name="ErrorFile">
+<Description>
+Temporary file to store errors from commands</Description>
+<Type>%String</Type>
+</Property>
+
+<Property name="OutputFile">
+<Description>
+Temporary file to store output from commands</Description>
+<Type>%String</Type>
+</Property>
+
+<Method name="%OnNew">
+<Description>
+
+Constructor. Initializations</Description>
+<FormalSpec>pGitPath:%String,pWorkDir:%String,pOutput:%String,pError:%String</FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+    if ((pWorkDir="")||(pOutput="")||(pError="")) {
+	    $$$ThrowStatus($$$ERROR($$$GeneralError,"WorkDir, OutputFile or ErrorFile is set to null"))
+    }
+    set ..GitPath = pGitPath
+    set ..WorkDir = pWorkDir
+    set ..CacheDir = pWorkDir_..#CACHEDIRNAME
+    set ..OutputFile = pOutput
+    set ..ErrorFile = pError
+    set ..Logger = ##class(Studio.SourceControl.Util.Logger).%New()
+    
+    quit $$$OK
+]]></Implementation>
+</Method>
+
+<Method name="Add">
+<Description>
+
+git add</Description>
+<FormalSpec><![CDATA[pFile:%String="",&pOutput,pLog:%Boolean=1]]></FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	if pFile'="" {
+		quit ..RunCmd("git add """_pFile_"""", .pOutput, pLog)
+	} else {
+		quit ..RunCmd("git add --all", .pOutput, pLog)
+
+	}
+]]></Implementation>
+</Method>
+
+<Method name="Commit">
+<Description>
+
+git commit</Description>
+<FormalSpec><![CDATA[pFile:%String,pMsg:%String,&pOutput,pAmend:%Boolean=0,pLog:%Boolean=1]]></FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	set opts="-a"
+	set:pAmend opts=opts_" --amend"
+	quit ..RunCmd("git commit "_opts_" -m """_pMsg_"""", .pOutput, pLog)
+]]></Implementation>
+</Method>
+
+<Method name="Status">
+<Description>
+
+git status</Description>
+<FormalSpec><![CDATA[pFile:%String,&statuscode:%String,&statusdesc:%String,&pOutput,pLog:%Boolean=1,pPorcelain:%Boolean=0]]></FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	set (ret,statuscode,statusdesc)=""
+	
+	if pFile'="" {
+		set ret = ..RunCmd("git status -s """_pFile_"""", .pOutput, pLog)
+		if $data(pOutput(1)) {
+			set line=$zstrip(pOutput(1),"<W")
+			set s=$extract(line,0,1)
+			set statuscode=s
+			set statusdesc=$case(s,
+				"?":"untracked",
+				"M":"updated in index",
+				"A":"added to index",
+				"D":"deleted from index",
+				"R":"renamed in index",
+				"C":"copied in index",
+				"!":"ignored"
+			)
+		} else {
+			set ret = ..RunCmd("git ls-files -v """_pFile_"""", .pOutput, pLog)
+			if $data(pOutput(1)) {
+				set line=$zstrip(pOutput(1),"<W")
+				set s=$zconvert($extract(line,0,1),"U")
+				if s="H" {
+					set statuscode="H"
+					set statusdesc="Cached"
+				}
+			}
+		} 
+	} else {
+		set opts=""
+		set:pPorcelain opts="--porcelain"
+		set ret = ..RunCmd("git status "_opts, .pOutput, pLog)
+	}
+	
+	quit ret
+]]></Implementation>
+</Method>
+
+<Method name="Checkout">
+<Description>
+
+git checkout</Description>
+<FormalSpec><![CDATA[pFile:%String="",pBranch:%String="",&pOutput,pLog:%Boolean=1]]></FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	if pFile'="" {
+		quit ..RunCmd("git checkout HEAD """_pFile_"""", .pOutput, pLog)
+	}
+	else {
+		quit ..RunCmd("git checkout "_pBranch, .pOutput, pLog)
+	}
+]]></Implementation>
+</Method>
+
+<Method name="Log">
+<Description>
+
+git log</Description>
+<FormalSpec><![CDATA[pFile:%String,&pOutput,pLog:%Boolean=1]]></FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[	quit ..RunCmd("git log -2 """_pFile_"""", .pOutput, pLog)
+]]></Implementation>
+</Method>
+
+<Method name="Reset">
+<Description>
+
+git reset</Description>
+<FormalSpec><![CDATA[pFile:%String,&pOutput,pLog:%Boolean=1]]></FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[	quit ..RunCmd("git reset HEAD """_pFile_"""", .pOutput, pLog)
+]]></Implementation>
+</Method>
+
+<Method name="Branch">
+<Description>
+
+git branch</Description>
+<FormalSpec><![CDATA[pBranch:%String,&pOutput,pLog:%Boolean=1]]></FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	if pBranch="" {
+		quit ..RunCmd("git branch", .pOutput, pLog)
+	}
+	quit ..RunCmd("git branch """_pBranch_"""", .pOutput, pLog)
+]]></Implementation>
+</Method>
+
+<Method name="ListConfig">
+<Description>
+
+git config --list</Description>
+<FormalSpec><![CDATA[&pOutput,pLog:%Boolean=1]]></FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[	quit ..RunCmd("git config --list", .pOutput, pLog)
+]]></Implementation>
+</Method>
+
+<Method name="GetCurrentBranch">
+<Description>
+
+Returns a string with the name of the current branch</Description>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	set result=""
+	set tSC=..CurrentBranch(.output,0)
+	if $$$ISOK(tSC) set result=output(1)
+	quit result
+]]></Implementation>
+</Method>
+
+<Method name="CurrentBranch">
+<Description>
+
+current branch</Description>
+<FormalSpec><![CDATA[&pOutput,pLog:%Boolean=1]]></FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[	quit ..RunCmd("git rev-parse --symbolic-full-name --abbrev-ref HEAD", .pOutput, pLog)
+]]></Implementation>
+</Method>
+
+<Method name="DiffStatus">
+<Description>
+
+git diff --name-status: useful to know what changes (status) have been done to files</Description>
+<FormalSpec><![CDATA[pBranch:%String="",pReverse:%Boolean=1,&pOutput,pLog:%Boolean=1]]></FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	set current = ..GetCurrentBranch()
+	set opts="--name-status"
+	set:pReverse opts=opts_" -R"
+	quit ..RunCmd("git diff "_opts_" "_pBranch, .pOutput, pLog)
+]]></Implementation>
+</Method>
+
+<Method name="DiffStat">
+<Description>
+
+git diff --stat: useful to report statistics about changes</Description>
+<FormalSpec><![CDATA[pBranch:%String="",pReverse:%Boolean=1,&pOutput,pLog:%Boolean=1]]></FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	set current = ..GetCurrentBranch()
+	set opts="--stat"
+	set:pReverse opts=opts_" -R"
+	quit ..RunCmd("git diff "_opts_" "_pBranch, .pOutput, pLog)
+]]></Implementation>
+</Method>
+
+<Method name="Diff">
+<Description>
+
+git diff: simple changes made in a file</Description>
+<FormalSpec><![CDATA[pFile:%String="",&pOutput,pLog:%Boolean=1]]></FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	set opts="--cached --patience"
+	quit ..RunCmd("git diff "_opts_" "_pFile, .pOutput, pLog)
+]]></Implementation>
+</Method>
+
+<Method name="Push">
+<Description>
+
+git push</Description>
+<FormalSpec><![CDATA[&pOutput,pLog:%Boolean=1]]></FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[	quit ..RunCmd("git push", .pOutput, pLog)
+]]></Implementation>
+</Method>
+
+<Method name="Pull">
+<Description>
+
+git pull</Description>
+<FormalSpec><![CDATA[&pOutput,pLog:%Boolean=1]]></FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[	quit ..RunCmd("git pull", .pOutput, pLog)
+]]></Implementation>
+</Method>
+
+<Method name="RemoteUpdate">
+<Description>
+
+git remote update group</Description>
+<FormalSpec><![CDATA[pGroup:%String,&pOutput,pLog:%Boolean=1]]></FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[	quit ..RunCmd("git remote update "_pGroup, .pOutput, pLog)
+]]></Implementation>
+</Method>
+
+<Method name="Merge">
+<Description>
+
+git merge</Description>
+<FormalSpec><![CDATA[pBranch:%String,pAbort:%Boolean=0,&pOutput,pLog:%Boolean=1]]></FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	set opts="--no-commit --no-ff"
+	set:pAbort opts="--abort"
+	quit ..RunCmd("git merge "_opts_" "_pBranch, .pOutput, pLog)
+]]></Implementation>
+</Method>
+
+<Method name="LsFiles">
+<Description>
+
+git ls-files</Description>
+<FormalSpec><![CDATA[&pOutput,pLog:%Boolean=1]]></FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[	quit ..RunCmd("git ls-files --cached -v", .pOutput, pLog)
+]]></Implementation>
+</Method>
+
+<Method name="RunCmd">
+<Description>
+
+Runs a cmd in the OS and returns the output and error</Description>
+<FormalSpec><![CDATA[cmd:%String,&pOutput,pLog:%Boolean=1]]></FormalSpec>
+<Private>1</Private>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	#define ISWINDOWS	($zversion(1)=2)
+	
+	set ret=$$$OK
+	try {
+		set (sc,pOutput)=""
+		set text=cmd
+		
+		if ..GitPath'="" {
+			set exe=$piece(cmd," ")
+			set args=$piece(cmd," ", 2, $l(cmd," "))
+			set cmd=$c(34)_..GitPath_exe_$c(34)_" "_args
+		}
+		
+		if $$$ISWINDOWS {
+			set cmd = "cd /D """_..WorkDir_""" & "_cmd
+		} else {
+			set cmd = "cd """_..WorkDir_""" && "_cmd
+		}
+		
+		if pLog=1 do ..Logger.Info($c(13)_">"_text)
+		do ..Logger.Debug(cmd)
+		
+		set rc=$zf(-1,cmd_" 2> """_..ErrorFile_""" > """_..OutputFile_"""")
+		
+		set errorstream=##class(%FileCharacterStream).%New()
+		set errorstream.Filename=..ErrorFile
+	
+		set outputstream=##class(%FileCharacterStream).%New()
+		set outputstream.Filename=..OutputFile
+	
+		set ind=0
+		if errorstream.Size>0 {
+			do errorstream.Rewind()
+			while 'errorstream.AtEnd {
+				set errorLine=errorstream.Read()
+				do ..Logger.Debug(errorLine)
+				set ind=ind+1
+				set pOutput(ind)=errorLine
+			}
+		}
+		if outputstream.Size>0 {
+			do outputstream.Rewind()
+			while 'outputstream.AtEnd {
+				set outputLine=outputstream.ReadLine()
+				do ..Logger.Debug(outputLine)
+				set ind=ind+1
+				set pOutput(ind)=outputLine
+			}
+		}
+		do errorstream.Clear(),outputstream.Clear()
+		
+	} catch errObj {
+		set ret=errObj.AsStatus()
+	}
+		
+	quit ret
+]]></Implementation>
+</Method>
+</Class>
+</Export>
