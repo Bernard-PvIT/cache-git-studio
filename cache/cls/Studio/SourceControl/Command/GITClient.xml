@@ -34,7 +34,7 @@ Path to GIT work dir (with trailing slash)</Description>
 
 <Property name="HomeDir">
 <Description>
-HOME path (Unix only). ThE value will be set as $HOME before executing git commands.</Description>
+HOME path (Unix only). The value will be set as $HOME before executing git commands.</Description>
 <Type>%String</Type>
 </Property>
 
