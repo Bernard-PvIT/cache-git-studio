@@ -7,16 +7,28 @@
 Studio extension to provide Git source control integration</br>
 See also <class>Studio.SourceControl.Command.GITClient</class>
 <h2>Configuration</h2>
+
+<p>Windows Example</p>
 <pre>
 s ^GITConfig("gitpath")="c:\SmartGitHg 4\git\bin\"  // path to git binaries
 s ^GITConfig("workdir")="c:\sandbox\MyApp\"         // path to git work directory
 s ^GITConfig("output")="c:\git.output.txt"          // temp. file to store git output
-s ^GITConfig("error")="c:\git.error.txt"          	// temp. file to store git error
-
+s ^GITConfig("error")="c:\git.error.txt"            // temp. file to store git error
 </pre>
+
+<p>Linux example</p>
+<pre>
+s ^GITConfig("gitpath")="/usr/local/git/bin/"       // path to git binaries
+s ^GITConfig("workdir")="/workspace/myuser/myrepo/" // path to git work directory
+s ^GITConfig("homedir")="/home/ensemble"            // path to git work directory
+s ^GITConfig("output")="/tmp/output.txt"            // temp. file to store git output
+s ^GITConfig("error")="/tmp/error.txt"              // temp. file to store git error
+</pre>
+
 <h2>Changelog</h2>
-<ul><li>0.1</li><ul>
-<li>Simple initial version. Command outputs printed in Studio output</li>
+<ul>
+ <li>0.1 - Simple initial version. Command outputs printed in Studio output</li>
+ <li>0.2 - Added HomeDir to GITClient to allow specifying a $HOME env. variable when running git commands</li>
 </ul>]]></Description>
 <Super>%Studio.SourceControl.Base</Super>
 <TimeCreated>62895,67330.802584</TimeCreated>
@@ -259,10 +271,11 @@ Initialization. Load configuration and show status of work dir.</Description>
     	
     	set gitpath=$$$GetConfig("gitpath")
 		set workdir=$$$GetConfig("workdir")
+		set homedir=$$$GetConfig("homedir")
 		set output=$$$GetConfig("output")
 		set error=$$$GetConfig("error")
 	
-    	set ..Command = ##class(Studio.SourceControl.Command.GITClient).%New(gitpath, workdir, output, error)
+    	set ..Command = ##class(Studio.SourceControl.Command.GITClient).%New(gitpath, workdir, homedir, output, error)
     	do ..Logger.Info(">Working Directory: "_..Command.WorkDir)
 	
 		$$$THROWONERROR(sc,..Status(""))		

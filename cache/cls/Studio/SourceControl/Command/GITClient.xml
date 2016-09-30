@@ -32,6 +32,12 @@ Path to GIT work dir (with trailing slash)</Description>
 <Type>%String</Type>
 </Property>
 
+<Property name="HomeDir">
+<Description>
+HOME path (Unix only). ThE value will be set as $HOME before executing git commands.</Description>
+<Type>%String</Type>
+</Property>
+
 <Property name="CacheDir">
 <Description>
 Path to Cache files in GIT work dir (with trailing slash)</Description>
@@ -54,7 +60,7 @@ Temporary file to store output from commands</Description>
 <Description>
 
 Constructor. Initializations</Description>
-<FormalSpec>pGitPath:%String,pWorkDir:%String,pOutput:%String,pError:%String</FormalSpec>
+<FormalSpec>pGitPath:%String,pWorkDir:%String,pHomeDir:%String,pOutput:%String,pError:%String</FormalSpec>
 <ReturnType>%Status</ReturnType>
 <Implementation><![CDATA[
     if ((pWorkDir="")||(pOutput="")||(pError="")) {
@@ -62,6 +68,7 @@ Constructor. Initializations</Description>
     }
     set ..GitPath = pGitPath
     set ..WorkDir = pWorkDir
+    set ..HomeDir = pHomeDir
     set ..CacheDir = pWorkDir_..#CACHEDIRNAME
     set ..OutputFile = pOutput
     set ..ErrorFile = pError
@@ -345,6 +352,9 @@ Runs a cmd in the OS and returns the output and error</Description>
 		if $$$ISWINDOWS {
 			set cmd = "cd /D """_..WorkDir_""" & "_cmd
 		} else {
+			if ..HomeDir'="" {
+				set cmd = "export HOME="_..HomeDir_" && "
+			}
 			set cmd = "cd """_..WorkDir_""" && "_cmd
 		}
 		
