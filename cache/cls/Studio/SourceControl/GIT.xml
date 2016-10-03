@@ -359,6 +359,9 @@ OnAfterSave. Exports source controlled files to XML</Description>
 </Method>
 
 <Method name="ExportToFile">
+<Description>
+
+Exports a file to XML</Description>
 <FormalSpec>InternalName:%String,Filename:%String</FormalSpec>
 <ReturnType>%Status</ReturnType>
 <Implementation><![CDATA[	quit $system.OBJ.Export(InternalName, Filename, "-d /diffexport")
@@ -943,6 +946,36 @@ Loads modified files from workdir and checks for troubled ^SourceControl entries
 	}
 	
 	quit tSC
+]]></Implementation>
+</Method>
+
+<Method name="AddClasses">
+<Description>
+
+Adds classes (only non-generated) which name starts with pStartsWith.
+(useful to add a bunch of classes belonging to a package from Terminal).</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>pStartsWith:%String</FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	set ret = $$$OK
+	try {
+		set control = ##class(Studio.SourceControl.GIT).%New($lb("", "", "0", "2015.200000"))
+		
+		set statement = ##class(%SQL.Statement).%New()
+   		set sql = "select id from %Dictionary.ClassDefinition where id %startswith ? and generatedby is null"
+   		do statement.%Prepare(sql)
+   		set resultSet = statement.%Execute(pStartsWith)
+   		
+   		while resultSet.%Next() {
+			set className = resultSet.ID_".cls"
+			$$$ThrowOnError(control.Add(className))
+   		}
+   		
+	} catch ex {
+		set ret = ex.AsStatus()
+	}
+	quit ret
 ]]></Implementation>
 </Method>
 </Class>
