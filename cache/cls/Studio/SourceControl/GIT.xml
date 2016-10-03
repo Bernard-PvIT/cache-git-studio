@@ -100,7 +100,6 @@ Studio menu options</Description>
 <MenuItem Name="Switch to Branch..."/>
 <MenuItem Name="Create and Switch to Branch..."/>
 <MenuItem Name="Diff with Branch..."/>
-<MenuItem Name="List Branches"/>
 <MenuItem Separator="1" Name="--------------"/>
 <MenuItem Name="Merge with..."/>
 <MenuItem Name="Abort merge"/>
