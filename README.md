@@ -31,7 +31,7 @@ ENSEMBLE>set ^GITConfig("output")="c:\git.output.txt"          // temp. file to 
 ENSEMBLE>set ^GITConfig("error")="c:\git.error.txt"            // temp. file to store git error
 ```
 
-* After configura path suppose you working folder will be "C:\workspace\MyProject>" then you should execute
+* After configuration, supposing you working folder is "C:\workspace\MyProject>" then you should execute
 ```
 C:\workspace\MyProject>git init
 C:\workspace\MyProject>git config --global user.email "your-email@company.com"
