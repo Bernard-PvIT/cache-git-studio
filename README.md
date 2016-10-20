@@ -2,6 +2,9 @@
 
 [InterSystems Caché](http://www.intersystems.com/our-products/cache/cache-overview/) Studio plugin to use Git.
 
+## Requirements
+* Install Git First
+
 ## Installation
 * Clone repository or just download latest version into a local directory
 ```
@@ -26,6 +29,13 @@ ENSEMBLE>set ^GITConfig("gitpath")="c:\git\bin\"               // path to git bi
 ENSEMBLE>set ^GITConfig("workdir")="c:\workspace\MyProject\"   // path to git work directory
 ENSEMBLE>set ^GITConfig("output")="c:\git.output.txt"          // temp. file to store git output
 ENSEMBLE>set ^GITConfig("error")="c:\git.error.txt"            // temp. file to store git error
+```
+
+* After configura path suppose you working folder will be "C:\workspace\MyProject>" then you should execute
+```
+C:\workspace\MyProject>git init
+C:\workspace\MyProject>git config --global user.email "your-email@company.com"
+C:\workspace\MyProject>git config --global user.name "Your Name"
 ```
 
 * Configure your namespace to use *Studio.SourceControl.GIT* as the source control class:
