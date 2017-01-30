@@ -10,25 +10,30 @@ See also <class>Studio.SourceControl.Command.GITClient</class>
 
 <p>Windows Example</p>
 <pre>
-s ^GITConfig("gitpath")="c:\SmartGitHg 4\git\bin\"  // path to git binaries
-s ^GITConfig("workdir")="c:\sandbox\MyApp\"         // path to git work directory
-s ^GITConfig("output")="c:\git.output.txt"          // temp. file to store git output
-s ^GITConfig("error")="c:\git.error.txt"            // temp. file to store git error
+s ^GITConfig($username,"gitpath")="c:\SmartGitHg 4\git\bin\"  // path to git binaries
+s ^GITConfig($username,"workdir")="c:\sandbox\MyApp\"         // path to git work directory
+s ^GITConfig($username,"authorname")="John Doe"            	  // [optional] author name used in git commits
+s ^GITConfig($username,"authoremail")="johndoe@server.com"    // [optional] author email used in git commits
+s ^GITConfig($username,"output")="c:\git.output.txt"          // temp. file to store git output
+s ^GITConfig($username,"error")="c:\git.error.txt"            // temp. file to store git error
 </pre>
 
 <p>Linux example</p>
 <pre>
-s ^GITConfig("gitpath")="/usr/local/git/bin/"       // path to git binaries
-s ^GITConfig("workdir")="/workspace/myuser/myrepo/" // path to git work directory
-s ^GITConfig("homedir")="/home/ensemble"            // path to git work directory
-s ^GITConfig("output")="/tmp/output.txt"            // temp. file to store git output
-s ^GITConfig("error")="/tmp/error.txt"              // temp. file to store git error
+s ^GITConfig($username,"gitpath")="/usr/local/git/bin/"       // path to git binaries
+s ^GITConfig($username,"workdir")="/workspace/myuser/myrepo/" // path to git work directory
+s ^GITConfig($username,"homedir")="/home/ensemble"            // path to git home directory
+s ^GITConfig($username,"authorname")="John Doe"               // [optional] author name used in git commits
+s ^GITConfig($username,"authoremail")="johndoe@server.com"    // [optional] author email used in git commits
+s ^GITConfig($username,"output")="/tmp/output.txt"            // temp. file to store git output
+s ^GITConfig($username,"error")="/tmp/error.txt"              // temp. file to store git error
 </pre>
 
 <h2>Changelog</h2>
 <ul>
  <li>0.1 - Simple initial version. Command outputs printed in Studio output</li>
  <li>0.2 - Added HomeDir to GITClient to allow specifying a $HOME env. variable when running git commands</li>
+ <li>0.3 - Configuration by $username. Added AuthorName, AuthorEmail to allow specifiyng GIT_AUTHOR_NAME, GIT_AUTHOR_EMAIL in shared environments from Caché context</li>
 </ul>]]></Description>
 <Super>%Studio.SourceControl.Base</Super>
 <TimeCreated>62895,67330.802584</TimeCreated>
@@ -259,7 +264,7 @@ Initialization. Load configuration and show status of work dir.</Description>
 <FormalSpec>Name:%String,Password:%String</FormalSpec>
 <ReturnType>%Status</ReturnType>
 <Implementation><![CDATA[
-	#define  GetConfig(%name) $g(^GITConfig(%name))
+	#define  GetConfig(%name) $get(^GITConfig($username,%name))
 	
 	set ret=$$$OK
 	
@@ -271,10 +276,12 @@ Initialization. Load configuration and show status of work dir.</Description>
     	set gitpath=$$$GetConfig("gitpath")
 		set workdir=$$$GetConfig("workdir")
 		set homedir=$$$GetConfig("homedir")
+		set authorname=$$$GetConfig("authorname")
+		set authoremail=$$$GetConfig("authoremail")
 		set output=$$$GetConfig("output")
 		set error=$$$GetConfig("error")
 	
-    	set ..Command = ##class(Studio.SourceControl.Command.GITClient).%New(gitpath, workdir, homedir, output, error)
+    	set ..Command = ##class(Studio.SourceControl.Command.GITClient).%New(gitpath, workdir, homedir, authorname, authoremail, output, error)
     	do ..Logger.Info(">Working Directory: "_..Command.WorkDir)
 	
 		$$$THROWONERROR(sc,..Status(""))		
