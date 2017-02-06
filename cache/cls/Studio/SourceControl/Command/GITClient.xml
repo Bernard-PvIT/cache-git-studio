@@ -179,7 +179,7 @@ git checkout</Description>
 <ReturnType>%Status</ReturnType>
 <Implementation><![CDATA[
 	if pFile'="" {
-		quit ..RunCmd("git checkout HEAD """_pFile_"""", .pOutput, pLog)
+		quit ..RunCmd("git checkout -- """_pFile_"""", .pOutput, pLog)
 	}
 	else {
 		quit ..RunCmd("git checkout "_pBranch, .pOutput, pLog)
@@ -193,7 +193,11 @@ git checkout</Description>
 git log</Description>
 <FormalSpec><![CDATA[pFile:%String,&pOutput,pLog:%Boolean=1]]></FormalSpec>
 <ReturnType>%Status</ReturnType>
-<Implementation><![CDATA[	quit ..RunCmd("git log -2 """_pFile_"""", .pOutput, pLog)
+<Implementation><![CDATA[
+	set file = ""
+	if pFile'="" set file = ""_pFile_""
+	
+	quit ..RunCmd("git log --pretty=format:""%h %ad | %s%d [%an]"" --graph --date=short --max-count=20 "_file, .pOutput, pLog)
 ]]></Implementation>
 </Method>
 
@@ -289,7 +293,7 @@ git diff: simple changes made in a file</Description>
 <FormalSpec><![CDATA[pFile:%String="",&pOutput,pLog:%Boolean=1]]></FormalSpec>
 <ReturnType>%Status</ReturnType>
 <Implementation><![CDATA[
-	set opts="--cached --patience"
+	set opts="--patience"
 	quit ..RunCmd("git diff "_opts_" "_pFile, .pOutput, pLog)
 ]]></Implementation>
 </Method>

@@ -10,23 +10,29 @@ See also <class>Studio.SourceControl.Command.GITClient</class>
 
 <p>Windows Example</p>
 <pre>
-s ^GITConfig($username,"gitpath")="c:\SmartGitHg 4\git\bin\"  // path to git binaries
-s ^GITConfig($username,"workdir")="c:\sandbox\MyApp\"         // path to git work directory
-s ^GITConfig($username,"authorname")="John Doe"            	  // [optional] author name used in git commits
-s ^GITConfig($username,"authoremail")="johndoe@server.com"    // [optional] author email used in git commits
-s ^GITConfig($username,"output")="c:\git.output.txt"          // temp. file to store git output
-s ^GITConfig($username,"error")="c:\git.error.txt"            // temp. file to store git error
+s ^GITConfig($username,"gitpath")="c:\SmartGitHg 4\git\bin\"  	// path to git binaries
+s ^GITConfig($username,"workdir")="c:\sandbox\MyApp\"         	// path to git work directory
+s ^GITConfig($username,"authorname")="John Doe"            	  	// [optional] author name used in git commits
+s ^GITConfig($username,"authoremail")="johndoe@server.com"    	// [optional] author email used in git commits
+s ^GITConfig($username,"output")="c:\git.output.txt"          	// temp. file to store git output
+s ^GITConfig($username,"error")="c:\git.error.txt"            	// temp. file to store git error
+s ^GITConfig($username,"on.reloadfiles")=$lb("Studio.SourceControl.Sample.Callback", "Change") 	// [optional] classmethod to call after reloading a file
+s ^GITConfig($username,"on.workdirload")=$lb("Studio.SourceControl.Sample.Callback", "Change")	// [optional] classmethod to call after a workdir load operation
+s ^GITConfig($username,"on.pull")=$lb("Studio.SourceControl.Sample.Callback", "Change") 		// [optional] classmethod to call after a pull operation
 </pre>
 
 <p>Linux example</p>
 <pre>
-s ^GITConfig($username,"gitpath")="/usr/local/git/bin/"       // path to git binaries
-s ^GITConfig($username,"workdir")="/workspace/myuser/myrepo/" // path to git work directory
-s ^GITConfig($username,"homedir")="/home/ensemble"            // path to git home directory
-s ^GITConfig($username,"authorname")="John Doe"               // [optional] author name used in git commits
-s ^GITConfig($username,"authoremail")="johndoe@server.com"    // [optional] author email used in git commits
-s ^GITConfig($username,"output")="/tmp/output.txt"            // temp. file to store git output
-s ^GITConfig($username,"error")="/tmp/error.txt"              // temp. file to store git error
+s ^GITConfig($username,"gitpath")="/usr/local/git/bin/"       	// path to git binaries
+s ^GITConfig($username,"workdir")="/workspace/myuser/myrepo/" 	// path to git work directory
+s ^GITConfig($username,"homedir")="/home/ensemble"            	// path to git home directory
+s ^GITConfig($username,"authorname")="John Doe"               	// [optional] author name used in git commits
+s ^GITConfig($username,"authoremail")="johndoe@server.com"    	// [optional] author email used in git commits
+s ^GITConfig($username,"output")="/tmp/output.txt"            	// temp. file to store git output
+s ^GITConfig($username,"error")="/tmp/error.txt"              	// temp. file to store git error
+s ^GITConfig($username,"on.reloadfiles")=$lb("Studio.SourceControl.Sample.Callback", "Change") 	// [optional] classmethod to call after reloading a file
+s ^GITConfig($username,"on.workdirload")=$lb("Studio.SourceControl.Sample.Callback", "Change")	// [optional] classmethod to call after a workdir load operation
+s ^GITConfig($username,"on.pull")=$lb("Studio.SourceControl.Sample.Callback", "Change") 		// [optional] classmethod to call after a pull operation
 </pre>
 
 <h2>Changelog</h2>
@@ -34,9 +40,14 @@ s ^GITConfig($username,"error")="/tmp/error.txt"              // temp. file to s
  <li>0.1 - Simple initial version. Command outputs printed in Studio output</li>
  <li>0.2 - Added HomeDir to GITClient to allow specifying a $HOME env. variable when running git commands</li>
  <li>0.3 - Configuration by $username. Added AuthorName, AuthorEmail to allow specifiyng GIT_AUTHOR_NAME, GIT_AUTHOR_EMAIL in shared environments from Caché context</li>
+ <li>0.4 - Simplified source control git options: all options enabled. WorkdirLoadFiles now deletes files as well. Callbacks added.</li>
 </ul>]]></Description>
 <Super>%Studio.SourceControl.Base</Super>
 <TimeCreated>62895,67330.802584</TimeCreated>
+
+<Parameter name="VERSION">
+<Default>0.4</Default>
+</Parameter>
 
 <Parameter name="FIRSTMENUITEM">
 <Description>
@@ -46,7 +57,7 @@ First menu item that appears</Description>
 
 <Parameter name="NOTSUPPORTEDTYPES">
 <Description>
-Not supported item types (or that you don't want to be exported/imported to/from svn)</Description>
+Not supported item types (or that you don't want to be exported/imported to/from git)</Description>
 <Default>PRJ,PKG</Default>
 </Parameter>
 
@@ -59,7 +70,7 @@ Logger instance to display messages</Description>
 
 <Property name="Command">
 <Description>
-SVN client wrapper</Description>
+GIT client wrapper</Description>
 <Type>Studio.SourceControl.Command.GITClient</Type>
 <Private>1</Private>
 </Property>
@@ -84,6 +95,21 @@ SVN client wrapper</Description>
 <Private>1</Private>
 </Property>
 
+<Property name="OnReloadFiles">
+<Type>%List</Type>
+<Private>1</Private>
+</Property>
+
+<Property name="OnWorkDirLoad">
+<Type>%List</Type>
+<Private>1</Private>
+</Property>
+
+<Property name="OnPull">
+<Type>%List</Type>
+<Private>1</Private>
+</Property>
+
 <XData name="Menu">
 <Description>
 Studio menu options</Description>
@@ -100,7 +126,6 @@ Studio menu options</Description>
 <MenuItem Name="Add All Changes"/>
 <MenuItem Separator="1" Name="--------------"/>
 <MenuItem Name="Commit..."/>
-<MenuItem Name="Amend commit..."/>
 <MenuItem Separator="1" Name="--------------"/>
 <MenuItem Name="Switch to Branch..."/>
 <MenuItem Name="Create and Switch to Branch..."/>
@@ -134,7 +159,7 @@ Callback called on each menu item. Allows to enable/disable items</Description>
 		if menu'="Git" quit
 		
 		// no file is selected
-		if ((InternalName="") && ((name="Add")||(name="Unstage")||(name="Log")) ) {
+		if ((InternalName="") && ((name="Add")||(name="Unstage")) ) {
 			set Enabled=0
 			quit
 		}
@@ -148,6 +173,9 @@ Callback called on each menu item. Allows to enable/disable items</Description>
 			set ..IsAdded = isadded
 		} 
 	
+		/*
+		simplify git menu options. all options enabled.
+		
 		// disable menu items depending on file status
 		if name="Add" {
 			set:((..IsControlled)) Enabled=0
@@ -158,6 +186,7 @@ Callback called on each menu item. Allows to enable/disable items</Description>
 		} elseif (name="Log")||(name="Diff") {
 			set:(('..IsControlled)) Enabled=0
 		}
+		*/
 		
 		// display current branch name
 		if name="Status" {
@@ -280,6 +309,9 @@ Initialization. Load configuration and show status of work dir.</Description>
 		set authoremail=$$$GetConfig("authoremail")
 		set output=$$$GetConfig("output")
 		set error=$$$GetConfig("error")
+		set ..OnWorkDirLoad=$$$GetConfig("on.workdirload")
+		set ..OnPull=$$$GetConfig("on.pull")
+		set ..OnReloadFiles=$$$GetConfig("on.reloadfiles")
 	
     	set ..Command = ##class(Studio.SourceControl.Command.GITClient).%New(gitpath, workdir, homedir, authorname, authoremail, output, error)
     	do ..Logger.Info(">Working Directory: "_..Command.WorkDir)
@@ -534,10 +566,10 @@ Each file entry should be like:
 A path/file.xml
 M path/file1.xml
 D path/file2.xml]]></Description>
-<FormalSpec><![CDATA[&files]]></FormalSpec>
+<FormalSpec><![CDATA[&files,*updated,*deleted]]></FormalSpec>
 <Private>1</Private>
 <Implementation><![CDATA[
-	set next=""
+	set next="", updated="", deleted=""
 	for {
 		set next=$order(files(next))
 		quit:next=""
@@ -556,12 +588,20 @@ D path/file2.xml]]></Description>
 		elseif status'="D" {
 			do ..Logger.Info(">>Loading "_internalname)
 			set tSC=..OnBeforeLoad(internalname)
+			set updated = updated_$lb(internalname)
 		}
 		elseif status="D" {
 			do ..Logger.Info(">>Deleting "_internalname)
 			set tSC=##class(%RoutineMgr).Delete(internalname)
 			set tSC=..DeleteControlledItem(internalname)
+			set deleted = deleted_$lb(internalname)
 		}
+	}
+	
+	// callback
+	if ..OnReloadFiles'=""{
+		do ..Logger.Info($char(13)_">Calling on.reloadfiles callback: "_$listget(..OnReloadFiles,1)_":"_$listget(..OnReloadFiles,2))
+		do ..Logger.Info(">result="_$classmethod($listget(..OnReloadFiles,1), $listget(..OnReloadFiles,2), updated, deleted))
 	}
 ]]></Implementation>
 </Method>
@@ -684,7 +724,6 @@ Returns source control log of an item</Description>
 <FormalSpec>InternalName:%String</FormalSpec>
 <ReturnType>%Status</ReturnType>
 <Implementation><![CDATA[
-	quit:InternalName="" $$$OK
 	set tSC=..Command.Log(..ExternalName(InternalName),.output)
 	do ..Print(.output)
 	quit tSC
@@ -698,7 +737,6 @@ Returns source control log of an item</Description>
 <FormalSpec>InternalName:%String</FormalSpec>
 <ReturnType>%Status</ReturnType>
 <Implementation><![CDATA[
-	quit:InternalName="" $$$OK
 	set tSC=..Command.Diff(..ExternalName(InternalName),.output)
 	do ..Print(.output)
 	quit tSC
@@ -806,7 +844,7 @@ Switchs workspace to branch</Description>
 	
 	// reload files
 	do ..Logger.Info($c(13)_">Analyzing files after changing from """_current_""" to """_pBranch_"""")
-	do ..ReloadFiles(.files)
+	do ..ReloadFiles(.files, .updated, .deleted)
 	do ..Logger.Info(">Completed.")
 	
 	quit tSC
@@ -874,7 +912,7 @@ Loads changes (as shown in git status)</Description>
 	
 	// reload / delete files
 	do ..Logger.Info($c(13)_">Reloading changed files:")
-	do ..ReloadFiles(.output)
+	do ..ReloadFiles(.output, .updated, .deleted)
 	do ..Logger.Info(">Completed.")
 	
 	quit tSC
@@ -916,8 +954,13 @@ Pulls fresh changes from origin to local</Description>
 	
 		// load changes into studio 
 		do ..Logger.Info($c(13)_">Reloading diff with: origin"_"/"_current)
-		do ..ReloadFiles(.out2)
+		do ..ReloadFiles(.out2, .updated, .deleted)
 		do ..Logger.Info(">Completed.")
+	}
+	
+	if $$$ISOK(tSC),..OnPull'=""{
+		do ..Logger.Info($char(13)_">Calling on.pull callback: "_$listget(..OnPull,1)_":"_$listget(..OnPull,2))
+		do ..Logger.Info(">result="_$classmethod($listget(..OnPull,1), $listget(..OnPull,2), updated, deleted))
 	}
 	
 	quit tSC
@@ -936,7 +979,7 @@ Loads modified files from workdir and checks for troubled ^SourceControl entries
 	
 	// reload / delete files 
 	do ..Logger.Info($c(13)_">Reloading files based on GIT status:")
-	do ..ReloadFiles(.output)
+	do ..ReloadFiles(.output, .updated, .deleted)
 	do ..Logger.Info(">Completed.")
 	
 	// check for deleted
@@ -947,8 +990,17 @@ Loads modified files from workdir and checks for troubled ^SourceControl entries
 		
 		set extname=..ExternalName(file)
 		if '##class(%File).Exists(extname) {
-			do ..Logger.Error("WARNING! "_file_" is in ^SourceControl but not in workdir")
+			do ..Logger.Info(">>Deleting "_file_" because it is in ^SourceControl but not in workdir")
+			set tSC=##class(%RoutineMgr).Delete(file)
+			set tSC=..DeleteControlledItem(file)
+			kill ^SourceControl(1,file)
 		}
+	}
+	
+	// callback
+	if $$$ISOK(tSC),..OnWorkDirLoad'=""{
+		do ..Logger.Info($char(13)_">Calling on.workdirload callback: "_$listget(..OnWorkDirLoad,1)_":"_$listget(..OnWorkDirLoad,2))
+		do ..Logger.Info(">result="_$classmethod($listget(..OnWorkDirLoad,1), $listget(..OnWorkDirLoad,2), updated, deleted))
 	}
 	
 	quit tSC

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25">
+<Class name="Studio.SourceControl.Sample.Callback">
+<Description>
+Sample callback class</Description>
+<Super>%RegisteredObject</Super>
+<TimeCreated>64320,54474.354168</TimeCreated>
+
+<Method name="Change">
+<ClassMethod>1</ClassMethod>
+<FormalSpec>updated:%List,deleted:%List</FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	write !,"updated:"
+	zwrite updated
+	write !,"deleted:"
+	zwrite deleted
+	
+	quit $$$OK
+]]></Implementation>
+</Method>
+</Class>
+</Export>
