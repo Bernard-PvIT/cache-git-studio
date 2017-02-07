@@ -23,19 +23,69 @@ set path="C:\Temp\cache-iat-pubsub\cache"
 do $system.OBJ.ImportDir(path,"*.xml","ck",.error,1)
 ```
 
-* Configure local paths for Git source control in the *^GITConfig* global:
+* Configure *cache-git-studio* using **^GITConfig** global:
+
+**Windows** configuration example:
 ```
-ENSEMBLE>set ^GITConfig($username,"gitpath")="c:\git\bin\"               // path to git bin files
-ENSEMBLE>set ^GITConfig($username,"workdir")="c:\workspace\MyProject\"   // path to git work directory
-ENSEMBLE>set ^GITConfig($username,"output")="c:\git.output.txt"          // temp. file to store git output
-ENSEMBLE>set ^GITConfig($username,"error")="c:\git.error.txt"            // temp. file to store git error
+// path to git binaries
+set ^GITConfig($username,"gitpath")="C:\Users\MyUser\AppData\Local\Programs\Git\bin\"	
+
+// path to git work directory
+set ^GITConfig($username,"workdir")="c:\sandbox\MyApp\"         	                         
+
+// [optional] author name used in git commits
+set ^GITConfig($username,"authorname")="John Doe"            	  	                         
+
+// [optional] author email used in git commits
+set ^GITConfig($username,"authoremail")="johndoe@server.com"    	                       
+
+// temp. file to store git output
+set ^GITConfig($username,"output")="c:\git.output.txt"
+
+// temp. file to store git errors
+set ^GITConfig($username,"error")="c:\git.error.txt"
+
+// [optional] classmethod to call after reloading files
+set ^GITConfig($username,"on.reloadfiles")=$lb("Studio.SourceControl.Sample.Callback", "Change")
+
+// [optional] classmethod to call after a workdir load operation
+set ^GITConfig($username,"on.workdirload")=$lb("Studio.SourceControl.Sample.Callback", "Change")
+
+// [optional] classmethod to call after a pull operation
+set ^GITConfig($username,"on.pull")=$lb("Studio.SourceControl.Sample.Callback", "Change")
 ```
 
-* Configure git user name and email:
+**Linux** configuration example:
 ```
-C:\workspace\MyProject>git init
-C:\workspace\MyProject>git config --global user.email "your-email@company.com"
-C:\workspace\MyProject>git config --global user.name "Your Name"
+// path to git binaries
+set ^GITConfig($username,"gitpath")="/usr/local/git/bin/"  	
+
+// path to git work directory
+set ^GITConfig($username,"workdir")="/workspace/myuser/myrepo/"
+
+// path to home directory
+set ^GITConfig($username,"homedir")="/home/ensemble"            	
+
+// [optional] author name used in git commits
+set ^GITConfig($username,"authorname")="John Doe"            	  	                         
+
+// [optional] author email used in git commits
+set ^GITConfig($username,"authoremail")="johndoe@server.com"    	                       
+
+// temp. file to store git output
+set ^GITConfig($username,"output")="/tmp/output.txt"
+
+// temp. file to store git errors
+set ^GITConfig($username,"error")="/tmp/error.txt"
+
+// [optional] classmethod to call after reloading files
+set ^GITConfig($username,"on.reloadfiles")=$lb("Studio.SourceControl.Sample.Callback", "Change")
+
+// [optional] classmethod to call after a workdir load operation
+set ^GITConfig($username,"on.workdirload")=$lb("Studio.SourceControl.Sample.Callback", "Change")
+
+// [optional] classmethod to call after a pull operation
+set ^GITConfig($username,"on.pull")=$lb("Studio.SourceControl.Sample.Callback", "Change")
 ```
 
 * Configure your namespace to use *Studio.SourceControl.GIT* as the source control class:
