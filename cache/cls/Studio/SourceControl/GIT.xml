@@ -16,6 +16,8 @@ s ^GITConfig($username,"authorname")="John Doe"            	  	// [optional] aut
 s ^GITConfig($username,"authoremail")="johndoe@server.com"    	// [optional] author email used in git commits
 s ^GITConfig($username,"output")="c:\git.output.txt"          	// temp. file to store git output
 s ^GITConfig($username,"error")="c:\git.error.txt"            	// temp. file to store git error
+s ^GITConfig($username,"udl")="1"            					// [optional] use UDL format instead of XML
+s ^GITConfig($username,"xmlextension")="0"            			// [optional] use xml as file extension always. When using UDL you may want to turn this off.
 s ^GITConfig($username,"on.reloadfiles")=$lb("Studio.SourceControl.Sample.Callback", "Change") 	// [optional] classmethod to call after reloading a file
 s ^GITConfig($username,"on.workdirload")=$lb("Studio.SourceControl.Sample.Callback", "Change")	// [optional] classmethod to call after a workdir load operation
 s ^GITConfig($username,"on.pull")=$lb("Studio.SourceControl.Sample.Callback", "Change") 		// [optional] classmethod to call after a pull operation
@@ -30,6 +32,8 @@ s ^GITConfig($username,"authorname")="John Doe"               	// [optional] aut
 s ^GITConfig($username,"authoremail")="johndoe@server.com"    	// [optional] author email used in git commits
 s ^GITConfig($username,"output")="/tmp/output.txt"            	// temp. file to store git output
 s ^GITConfig($username,"error")="/tmp/error.txt"              	// temp. file to store git error
+s ^GITConfig($username,"udl")="1"            					// [optional] use UDL format instead of XML
+s ^GITConfig($username,"xmlextension")="0"            			// [optional] use xml as file extension always. When using UDL you may want to turn this off.
 s ^GITConfig($username,"on.reloadfiles")=$lb("Studio.SourceControl.Sample.Callback", "Change") 	// [optional] classmethod to call after reloading a file
 s ^GITConfig($username,"on.workdirload")=$lb("Studio.SourceControl.Sample.Callback", "Change")	// [optional] classmethod to call after a workdir load operation
 s ^GITConfig($username,"on.pull")=$lb("Studio.SourceControl.Sample.Callback", "Change") 		// [optional] classmethod to call after a pull operation
@@ -41,12 +45,13 @@ s ^GITConfig($username,"on.pull")=$lb("Studio.SourceControl.Sample.Callback", "C
  <li>0.2 - Added HomeDir to GITClient to allow specifying a $HOME env. variable when running git commands</li>
  <li>0.3 - Configuration by $username. Added AuthorName, AuthorEmail to allow specifiyng GIT_AUTHOR_NAME, GIT_AUTHOR_EMAIL in shared environments from Caché context</li>
  <li>0.4 - Simplified source control git options: all options enabled. WorkdirLoadFiles now deletes files as well. Callbacks added.</li>
+ <li>0.5 - UDL format support added (Caché >= 2016.2)</li>
 </ul>]]></Description>
 <Super>%Studio.SourceControl.Base</Super>
 <TimeCreated>62895,67330.802584</TimeCreated>
 
 <Parameter name="VERSION">
-<Default>0.4</Default>
+<Default>0.5</Default>
 </Parameter>
 
 <Parameter name="FIRSTMENUITEM">
@@ -59,6 +64,12 @@ First menu item that appears</Description>
 <Description>
 Not supported item types (or that you don't want to be exported/imported to/from git)</Description>
 <Default>PRJ,PKG</Default>
+</Parameter>
+
+<Parameter name="NOTUDLEXTENSIONS">
+<Description>
+Extensions that can not be exported as UDL. XML will always be used.</Description>
+<Expression>$lb("hl7","dfi","lut")</Expression>
 </Parameter>
 
 <Property name="Logger">
@@ -107,6 +118,20 @@ GIT client wrapper</Description>
 
 <Property name="OnPull">
 <Type>%List</Type>
+<Private>1</Private>
+</Property>
+
+<Property name="UseUDL">
+<Description>
+Export files in UDL format</Description>
+<Type>%Boolean</Type>
+<Private>1</Private>
+</Property>
+
+<Property name="UseXMLExtension">
+<Description>
+Use always XML as filename extension </Description>
+<Type>%Boolean</Type>
 <Private>1</Private>
 </Property>
 
@@ -293,7 +318,7 @@ Initialization. Load configuration and show status of work dir.</Description>
 <FormalSpec>Name:%String,Password:%String</FormalSpec>
 <ReturnType>%Status</ReturnType>
 <Implementation><![CDATA[
-	#define  GetConfig(%name) $get(^GITConfig($username,%name))
+	#define GetConfig(%name,%default) $get(^GITConfig($username,%name), %default)
 	
 	set ret=$$$OK
 	
@@ -302,16 +327,18 @@ Initialization. Load configuration and show status of work dir.</Description>
 		do ..Logger.Info("=========================================================")
     	do ..Logger.Info(">GIT Source Control")
     	
-    	set gitpath=$$$GetConfig("gitpath")
-		set workdir=$$$GetConfig("workdir")
-		set homedir=$$$GetConfig("homedir")
-		set authorname=$$$GetConfig("authorname")
-		set authoremail=$$$GetConfig("authoremail")
-		set output=$$$GetConfig("output")
-		set error=$$$GetConfig("error")
-		set ..OnWorkDirLoad=$$$GetConfig("on.workdirload")
-		set ..OnPull=$$$GetConfig("on.pull")
-		set ..OnReloadFiles=$$$GetConfig("on.reloadfiles")
+    	set gitpath = $$$GetConfig("gitpath", "")
+		set workdir = $$$GetConfig("workdir","")
+		set homedir = $$$GetConfig("homedir","")
+		set authorname = $$$GetConfig("authorname","")
+		set authoremail = $$$GetConfig("authoremail","")
+		set output = $$$GetConfig("output","")
+		set error = $$$GetConfig("error","")
+		set ..OnWorkDirLoad = $$$GetConfig("on.workdirload","")
+		set ..OnPull = $$$GetConfig("on.pull","")
+		set ..OnReloadFiles = $$$GetConfig("on.reloadfiles","")
+		set ..UseUDL = $$$GetConfig("udl",0)
+		set ..UseXMLExtension = $$$GetConfig("xmlextension",1)
 	
     	set ..Command = ##class(Studio.SourceControl.Command.GITClient).%New(gitpath, workdir, homedir, authorname, authoremail, output, error)
     	do ..Logger.Info(">Working Directory: "_..Command.WorkDir)
@@ -335,7 +362,7 @@ Initialization. Load configuration and show status of work dir.</Description>
 <Method name="OnBeforeLoad">
 <Description>
 
-OnBeforeLoad. Loads source controlled files from XML</Description>
+OnBeforeLoad. Loads source controlled files from external file</Description>
 <FormalSpec>InternalName:%String</FormalSpec>
 <ReturnType>%Status</ReturnType>
 <Implementation><![CDATA[
@@ -370,7 +397,7 @@ OnBeforeLoad. Loads source controlled files from XML</Description>
 <Method name="OnAfterSave">
 <Description>
 
-OnAfterSave. Exports source controlled files to XML</Description>
+OnAfterSave. Exports source controlled files to external file</Description>
 <FormalSpec>InternalName:%String,Object:%RegisteredObject</FormalSpec>
 <ReturnType>%Status</ReturnType>
 <Implementation><![CDATA[
@@ -399,10 +426,29 @@ OnAfterSave. Exports source controlled files to XML</Description>
 <Method name="ExportToFile">
 <Description>
 
-Exports a file to XML</Description>
+Exports to external file</Description>
 <FormalSpec>InternalName:%String,Filename:%String</FormalSpec>
 <ReturnType>%Status</ReturnType>
-<Implementation><![CDATA[	quit $system.OBJ.Export(InternalName, Filename, "-d /diffexport")
+<Implementation><![CDATA[
+	#define isUDLSupported ($system.Version.GetNumber()>=2016.2)
+	
+	#if $$$isUDLSupported
+		// Caché version supports exporting as UDL
+		// UDL option enabled and file extension supports UDL, export as UDL
+		set ext = $zconvert($piece(InternalName,".",$length(InternalName,".")),"l")
+		if ..UseUDL,..CanExportExtensionUDL(ext) {
+			quit $system.OBJ.ExportUDL(InternalName, Filename, "-d /diffexport")
+		}
+	#else
+		// Caché does not support exporting as UDL.
+		// UDL option enabled, log an error and continue to export as XML.
+		if ..UseUDL {
+			do ..Logger.Error("Caché version "_$zv_" does not support exporting as UDL. Using XML instead...")
+		}
+	#endif
+	
+	// Default, export as XML.
+	quit $system.OBJ.Export(InternalName, Filename, "-d /diffexport")
 ]]></Implementation>
 </Method>
 
@@ -464,7 +510,7 @@ Provides a normalized way to format InternalNames (uppercase extension)</Descrip
 <Method name="ExternalName">
 <Description>
 
-Returns the external name (XML file name) corresponding to a Caché element</Description>
+Returns the external name (external file name) corresponding to a Caché element</Description>
 <FormalSpec>InternalName:%String</FormalSpec>
 <ReturnType>%String</ReturnType>
 <Implementation><![CDATA[
@@ -485,7 +531,7 @@ Returns the external name (XML file name) corresponding to a Caché element</Des
  	set ext=$zconvert($piece(InternalName,".",$length(InternalName,".")),"l")
  	quit:name="" ""
  	
- 	set filename=ext_"/"_$translate(name,".","/")_".xml"
+ 	set filename=ext_"/"_$translate(name,".","/")_$case(..UseXMLExtension, 1:".xml", :"."_ext)
  	quit ..Command.CacheDir_filename
 ]]></Implementation>
 </Method>
@@ -493,7 +539,7 @@ Returns the external name (XML file name) corresponding to a Caché element</Des
 <Method name="InternalName">
 <Description>
 
-Returns the internal name corresponding to a XML file</Description>
+Returns the internal name corresponding to an external file</Description>
 <FormalSpec>ExternalName:%String</FormalSpec>
 <ReturnType>%String</ReturnType>
 <Implementation><![CDATA[
@@ -554,6 +600,16 @@ Returns if an item is supported or not</Description>
 	}
 	
 	quit ret
+]]></Implementation>
+</Method>
+
+<Method name="CanExportExtensionUDL">
+<Description>
+
+Returns if an extension can </Description>
+<FormalSpec>extension:%String=""</FormalSpec>
+<ReturnType>%Integer</ReturnType>
+<Implementation><![CDATA[	quit ($listfind(..#NOTUDLEXTENSIONS, extension)=0)
 ]]></Implementation>
 </Method>
 
