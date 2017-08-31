@@ -17,7 +17,7 @@ git clone https://github.com/intersystems-ib/cache-git-studio.git
 zn "ENSEMBLE"
 ```
 
-* Load and compile the downloaded source code in the first step 
+* Load and compile the downloaded source code 
 ```
 set path="C:\Temp\cache-iat-pubsub\cache"
 do $system.OBJ.ImportDir(path,"*.xml","ck",.error,1)
@@ -44,6 +44,13 @@ set ^GITConfig($username,"output")="c:\git.output.txt"
 
 // temp. file to store git errors
 set ^GITConfig($username,"error")="c:\git.error.txt"
+
+// [optional] use UDL format instead of XML (default)
+set ^GITConfig($username,"udl")="1" 
+
+// [optional] use xml as file extension always.
+// when using UDL you may want to turn this off (0) so extensions will be like: cls, mac, etc.
+set ^GITConfig($username,"xmlextension")="0"
 
 // [optional] classmethod to call after reloading files
 set ^GITConfig($username,"on.reloadfiles")=$lb("Studio.SourceControl.Sample.Callback", "Change")
@@ -77,6 +84,13 @@ set ^GITConfig($username,"output")="/tmp/output.txt"
 
 // temp. file to store git errors
 set ^GITConfig($username,"error")="/tmp/error.txt"
+
+// [optional] use UDL format instead of XML (default)
+set ^GITConfig($username,"udl")="1" 
+
+// [optional] use xml as file extension always. 
+// when using UDL you may want to turn this off (0) so extensions will be like: cls, mac, etc.
+set ^GITConfig($username,"xmlextension")="0"
 
 // [optional] classmethod to call after reloading files
 set ^GITConfig($username,"on.reloadfiles")=$lb("Studio.SourceControl.Sample.Callback", "Change")
