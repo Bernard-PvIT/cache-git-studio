@@ -1,4 +1,4 @@
-/// Sample callback class
+/// Updated at 08/12/2019 14:34:01
 Class Studio.SourceControl.Sample.Callback Extends %RegisteredObject
 {
 

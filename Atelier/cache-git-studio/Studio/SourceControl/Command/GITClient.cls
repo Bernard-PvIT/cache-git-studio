@@ -1,6 +1,4 @@
-/// 
-/// Wrapper to call GIT commands from Caché</br>
-/// Commands will be run as the Caché O.S. user</br>
+/// Updated at 08/12/2019 14:33:29
 Class Studio.SourceControl.Command.GITClient Extends %RegisteredObject
 {
 

@@ -1,5 +1,4 @@
-/// 
-/// Handles log messages using log levels
+/// Updated at 08/12/2019 14:33:44
 Class Studio.SourceControl.Util.Logger Extends %RegisteredObject
 {
 
