@@ -1,4 +1,48 @@
-/// Updated at 08/12/2019 14:33:14
+/// 
+/// <h1>Studio + Git Source Control</h1>
+/// Studio extension to provide Git source control integration</br>
+/// See also <class>Studio.SourceControl.Command.GITClient</class>
+/// <h2>Configuration</h2>
+/// 
+/// <p>Windows Example</p>
+/// <pre>
+/// s ^GITConfig($username,"gitpath")="c:\SmartGitHg 4\git\bin\"  	// path to git binaries
+/// s ^GITConfig($username,"workdir")="c:\sandbox\MyApp\"         	// path to git work directory
+/// s ^GITConfig($username,"authorname")="John Doe"            	  	// [optional] author name used in git commits
+/// s ^GITConfig($username,"authoremail")="johndoe@server.com"    	// [optional] author email used in git commits
+/// s ^GITConfig($username,"output")="c:\git.output.txt"          	// temp. file to store git output
+/// s ^GITConfig($username,"error")="c:\git.error.txt"            	// temp. file to store git error
+/// s ^GITConfig($username,"udl")="1"            					// [optional] use UDL format instead of XML
+/// s ^GITConfig($username,"xmlextension")="0"            			// [optional] use xml as file extension always. When using UDL you may want to turn this off.
+/// s ^GITConfig($username,"on.reloadfiles")=$lb("Studio.SourceControl.Sample.Callback", "Change") 	// [optional] classmethod to call after reloading a file
+/// s ^GITConfig($username,"on.workdirload")=$lb("Studio.SourceControl.Sample.Callback", "Change")	// [optional] classmethod to call after a workdir load operation
+/// s ^GITConfig($username,"on.pull")=$lb("Studio.SourceControl.Sample.Callback", "Change") 		// [optional] classmethod to call after a pull operation
+/// </pre>
+/// 
+/// <p>Linux example</p>
+/// <pre>
+/// s ^GITConfig($username,"gitpath")="/usr/local/git/bin/"       	// path to git binaries
+/// s ^GITConfig($username,"workdir")="/workspace/myuser/myrepo/" 	// path to git work directory
+/// s ^GITConfig($username,"homedir")="/home/ensemble"            	// path to git home directory
+/// s ^GITConfig($username,"authorname")="John Doe"               	// [optional] author name used in git commits
+/// s ^GITConfig($username,"authoremail")="johndoe@server.com"    	// [optional] author email used in git commits
+/// s ^GITConfig($username,"output")="/tmp/output.txt"            	// temp. file to store git output
+/// s ^GITConfig($username,"error")="/tmp/error.txt"              	// temp. file to store git error
+/// s ^GITConfig($username,"udl")="1"            					// [optional] use UDL format instead of XML
+/// s ^GITConfig($username,"xmlextension")="0"            			// [optional] use xml as file extension always. When using UDL you may want to turn this off.
+/// s ^GITConfig($username,"on.reloadfiles")=$lb("Studio.SourceControl.Sample.Callback", "Change") 	// [optional] classmethod to call after reloading a file
+/// s ^GITConfig($username,"on.workdirload")=$lb("Studio.SourceControl.Sample.Callback", "Change")	// [optional] classmethod to call after a workdir load operation
+/// s ^GITConfig($username,"on.pull")=$lb("Studio.SourceControl.Sample.Callback", "Change") 		// [optional] classmethod to call after a pull operation
+/// </pre>
+/// 
+/// <h2>Changelog</h2>
+/// <ul>
+///  <li>0.1 - Simple initial version. Command outputs printed in Studio output</li>
+///  <li>0.2 - Added HomeDir to GITClient to allow specifying a $HOME env. variable when running git commands</li>
+///  <li>0.3 - Configuration by $username. Added AuthorName, AuthorEmail to allow specifiyng GIT_AUTHOR_NAME, GIT_AUTHOR_EMAIL in shared environments from Caché context</li>
+///  <li>0.4 - Simplified source control git options: all options enabled. WorkdirLoadFiles now deletes files as well. Callbacks added.</li>
+///  <li>0.5 - UDL format support added (Caché >= 2016.2)</li>
+/// </ul>
 Class Studio.SourceControl.GIT Extends %Studio.SourceControl.Base
 {
 
